@@ -82,7 +82,7 @@ const Main = () => {
 
     const margin = {top: 20, right: 40, bottom: 70, left: 40}
     const graphHeight = height - (margin.top - margin.bottom) - 128
-    const graphWidth = width - (margin.left - margin.right) - 64
+    const graphWidth = width - (margin.left - margin.right) - 98
     const boxWidth = graphWidth / data?.results?.length
 
     /** Reset Graph onCall */
@@ -116,7 +116,7 @@ const Main = () => {
     const max = d3.max(data?.results, (d) => +d.h)
     const min = d3.min(data?.results, (d) => +d.l)
     const yScale = d3.scaleLinear().range([graphHeight,0]).domain([min - 1,max + 1])
-    graph.append('g').call(d3.axisLeft(yScale))
+    graph.append('g').call(d3.axisRight(yScale)).attr('transform', `translate(${graphWidth}, 0)`)
 
     /** Create Boxes */
     const candles = graph.selectAll('candles').data(data?.results).enter()

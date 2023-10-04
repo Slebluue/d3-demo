@@ -88,7 +88,7 @@ const SmallText = styled.span `
 const Tooltip = styled.div`
   width: 200px;
   position: absolute;
-  left: 100px;
+  left: 16px;
   top: 16px;
   display: flex;
   flex-direction: column;

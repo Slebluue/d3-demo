@@ -17,6 +17,10 @@ const renderXAxisTick = (tick, i, size) => {
     return i !== 0 && i % 12 !== 0 ? '' : tick
   }
 
+  if (size < 2.25) {
+    return i !== 0 && i % 24 !== 0 ? '' : tick
+  }
+
 
   return i % 2 === 0 ? '' : tick
 }
