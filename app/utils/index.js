@@ -31,8 +31,5 @@ const TICK_FORMAT_MAP = {
   quarter: 'L',
   year: 'YYYY',
 }
-const formatXAxisTick = (data, timeframe) => {
-  return data?.results?.map(d => moment(d.t).format(FORMAT_MAP[timeframe]))
-}
 
-export { renderXAxisTick, TICK_FORMAT_MAP, formatXAxisTick }
+export { renderXAxisTick, TICK_FORMAT_MAP }

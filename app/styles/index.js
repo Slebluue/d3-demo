@@ -46,12 +46,6 @@ const Filter = styled.div`
   margin-right: 16px;
   margin-bottom: 8px;
 
-  & span {
-    font-size: 14px;
-    font-weight: 400;
-    color: rgb(93, 97, 103)
-  }
-
   & input {
     border-radius: 4px;
     padding: 4px 8px;
@@ -84,11 +78,50 @@ const Button = styled.button`
 `
 
 
+const SmallText = styled.span `
+  font-size: 14px;
+  font-weight: 400;
+  color: rgb(93, 97, 103);
+  margin-bottom: 4px;
+`
+
+const Tooltip = styled.div`
+  width: 200px;
+  height: 80px;
+  position: absolute;
+  left: 100px;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  z-index: 2;
+  background-color: #ffffff;
+  border-radius: 4px;
+  box-shadow: rgb(224, 227, 233) 0px 1px 2px 0px;
+  padding: 16px;
+  border-left: 4px solid rgb(9,122,230);
+
+  ${Flex} {
+    justify-content: space-between;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+  }
+
+  ${SubTitle} {
+    margin: 0;
+    color: rgb(39, 46, 57);
+  }
+`
+
+
 export {
   Container,
   Card,
+  Tooltip,
   Title,
   SubTitle,
+  SmallText,
   Flex,
   Filter,
   Button

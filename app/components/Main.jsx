@@ -6,10 +6,10 @@ import testData from './aapl.json'
 
 /** Hooks / Utils */
 import useRefResize from '../hooks/useRefResize'
-import { renderXAxisTick, formatXAxisTick, TICK_FORMAT_MAP } from '../utils'
+import { renderXAxisTick, TICK_FORMAT_MAP } from '../utils'
 
 /** Styles */
-import { Container, Card, Flex, Filter, Title, SubTitle, Button } from '../styles'
+import { Container, Card, Flex, Filter, Title, SubTitle, Button, Tooltip, SmallText } from '../styles'
 
 /** Dependencies */
 import * as d3 from 'd3'
@@ -31,6 +31,7 @@ const Main = () => {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [tooltip, setTooltip] = useState(null)
 
   const [form, setForm] = useState({ 
       ticker: 'AAPL',
@@ -143,7 +144,7 @@ const Main = () => {
       .attr('y1', 0)
       .attr('y2', graphHeight)
       .attr('stroke', 'black')
-      // .attr('stroke-dasharray', '5,5')
+      .attr('stroke-dasharray', '5,5')
       .attr('visibility', 'hidden')
 
     const mouseLineY = graph.append("line")
@@ -152,10 +153,10 @@ const Main = () => {
       .attr('y1', graphHeight)
       .attr('y2', graphHeight)
       .attr('stroke', 'black')
-      // .attr('stroke-dasharray', '5,5')
+      .attr('stroke-dasharray', '5,5')
       .attr('visibility', 'hidden')
 
-    /** Create bisector to reference on graph lines */
+    /** Create Tooltip */
     const bisect = d3.bisector(d => d?.t).left
     d3.select('#graph')
       .on("mousemove", (event) => {
@@ -163,8 +164,6 @@ const Main = () => {
         const x = points[0] - margin.left
         const xValue = xScale.invert(x)
         const rightIdx = bisect(data?.results, xValue)
-
-        console.log(x, xValue, rightIdx)
 
         const dataItem = data?.results[rightIdx]
 
@@ -184,6 +183,13 @@ const Main = () => {
 
         mouseLineY.attr('y1', yScale(dataItem?.c))
         mouseLineY.attr('y2', yScale(dataItem?.c))
+
+        setTooltip({
+          open: dataItem?.o,
+          high: dataItem?.h,
+          low: dataItem?.l,
+          close: dataItem?.c,
+        })
       })
       .on("mouseover",() => {
         mouseLineX.attr('visibility', 'visible')
@@ -192,6 +198,7 @@ const Main = () => {
       .on("mouseout",() => {
         mouseLineX.attr('visibility', 'hidden')
         mouseLineY.attr('visibility', 'hidden')
+        setTooltip(null)
       });
 
     return graph
@@ -221,23 +228,23 @@ const Main = () => {
       <SubTitle>Please note that the (free) API is rate limited to 5 request per minute. You may see an error if you submit the filters within that time frame.</SubTitle>
       <Flex>
         <Filter>
-          <span>Ticker:</span>
+          <SmallText>Ticker:</SmallText>
           <input type='text' value={form?.ticker} onChange={(e) => handleFormData('ticker', e.target.value)} />
         </Filter>
         <Filter>
-          <span>Multiplier:</span>
+          <SmallText>Multiplier:</SmallText>
           <input type='text' value={form?.multiplier} onChange={(e) => handleFormData('multiplier', e.target.value)} />
         </Filter>
         <Filter>
-          <span>Timespan:</span>
+          <SmallText>Timespan:</SmallText>
           <input type='text' value={form?.timespan} onChange={(e) => handleFormData('timespan', e.target.value)} />
         </Filter>
         <Filter>
-          <span>From:</span>
+          <SmallText>From:</SmallText>
           <input type='text' value={form?.from} onChange={(e) => handleFormData('from', e.target.value)} />
         </Filter>
         <Filter>
-          <span>To:</span>
+          <SmallText>To:</SmallText>
           <input type='text' value={form?.to} onChange={(e) => handleFormData('to', e.target.value)} />
         </Filter>
         <Button onClick={() => fetchData(form)}>
@@ -247,12 +254,31 @@ const Main = () => {
         </Button>
       </Flex>
       {error && <SubTitle style={{ color: 'red' }}>{error}</SubTitle>}
-      <Card
-        id='graph'
-        ref={ref}
-        width='100%'
-        height='500px'
-      />
+      <div style={{ position: 'relative' }}>
+        {tooltip && (
+          <Tooltip>
+            <Flex>
+              <SmallText>Open:</SmallText><SubTitle>{tooltip?.open}</SubTitle>
+            </Flex>
+            <Flex>
+              <SmallText>High:</SmallText><SubTitle>{tooltip?.high}</SubTitle>
+            </Flex>
+            <Flex>
+              <SmallText>Low:</SmallText><SubTitle>{tooltip?.low}</SubTitle>
+            </Flex>
+            <Flex>
+              <SmallText>Close:</SmallText><SubTitle>{tooltip?.close}</SubTitle>
+            </Flex>
+          </Tooltip>
+        )}
+        <Card
+          id='graph'
+          ref={ref}
+          width='100%'
+          height='500px'
+          style={{ position: 'relative' }}
+        />
+      </div>
     </Container>
   )
 }
