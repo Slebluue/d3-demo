@@ -4,7 +4,7 @@ const renderXAxisTick = (tick, i, size) => {
   if (size > 10) {
     return tick
   }
-  
+
   if (size <= 5 && size >= 3) {
     return i !== 0 && i % 3 !== 0 ? '' : tick
   }
@@ -21,7 +21,7 @@ const renderXAxisTick = (tick, i, size) => {
   return i % 2 === 0 ? '' : tick
 }
 
-const FORMAT_MAP = {
+const TICK_FORMAT_MAP = {
   second: 'LT',
   minute: 'LT',
   hour: 'LT',
@@ -35,4 +35,4 @@ const formatXAxisTick = (data, timeframe) => {
   return data?.results?.map(d => moment(d.t).format(FORMAT_MAP[timeframe]))
 }
 
-export { renderXAxisTick, formatXAxisTick }
+export { renderXAxisTick, TICK_FORMAT_MAP, formatXAxisTick }

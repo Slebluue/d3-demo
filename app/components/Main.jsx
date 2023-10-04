@@ -6,7 +6,7 @@ import testData from './aapl.json'
 
 /** Hooks / Utils */
 import useRefResize from '../hooks/useRefResize'
-import { renderXAxisTick, formatXAxisTick } from '../utils'
+import { renderXAxisTick, formatXAxisTick, TICK_FORMAT_MAP } from '../utils'
 
 /** Styles */
 import { Container, Card, Flex, Filter, Title, SubTitle, Button } from '../styles'
@@ -14,6 +14,7 @@ import { Container, Card, Flex, Filter, Title, SubTitle, Button } from '../style
 /** Dependencies */
 import * as d3 from 'd3'
 import { Bars } from  'react-loader-spinner'
+import moment from 'moment'
 
 
 const TEST_MODE = false // Just for development purposes so I do not rate limit myself.
@@ -94,9 +95,14 @@ const Main = () => {
         .attr('transform', `translate(${margin.left},${margin.top})`)
 
     /** Create xAxis */
-    const xScale = d3.scaleBand().range([0,graphWidth]).domain(formatXAxisTick(data, form.timespan))
+    const xScale = d3.scaleTime().range([0,graphWidth]).domain(d3.extent(data?.results, d => +d?.t))
     const xAxis = d3.axisBottom(xScale)
-    xAxis.tickFormat((tick, i) => renderXAxisTick(tick, i, boxWidth))
+    xAxis.tickFormat((tick, i) => {
+      const time = moment(tick).format(TICK_FORMAT_MAP[form?.timespan])
+      return renderXAxisTick(time, i, boxWidth)
+    })
+    xAxis.ticks(data?.results.length)
+
     graph.append('g').call(xAxis)
       .attr('transform', `translate(0, ${graphHeight})`)
       .selectAll('text')
@@ -114,22 +120,79 @@ const Main = () => {
     /** Create Boxes */
     const candles = graph.selectAll('candles').data(data?.results).enter()
     candles.append('rect')
-      .attr('x', (_,i) => boxWidth * i)
+      .attr('x', (_,i) => (boxWidth * i) - (boxWidth / 2) + 1)
       .attr('y', (d,_) => d.o > d.c ? yScale(d.o) : yScale(d.c))
         .attr('height', (d) => Math.abs(yScale(d.o) - yScale(d.c)))
         .attr('width', boxWidth - 2)
         .attr('stroke', (d) => d.o > d.c ? 'red' : 'green')
         .style('fill', (d) => d.o > d.c ? 'red' : 'transparent')
 
-    /** Create Line */
+    /** Create Vertical Line */
     const lines = graph.selectAll('lines').data(data?.results).enter()
-    lines.append('line')
-      .attr('x1', (_,i) => (boxWidth * i) + (boxWidth / 2) - 1)
-      .attr('x2', (_,i) => (boxWidth * i) + (boxWidth / 2) - 1)
-      .attr('y1', (d) => yScale(d.l))
-      .attr('y2', (d) => yScale(d.h))
+      lines.append('line')
+        .attr('x1', (_,i) => (boxWidth * i))
+        .attr('x2', (_,i) => (boxWidth * i))
+        .attr('y1', (d) => yScale(d.l))
+        .attr('y2', (d) => yScale(d.h))
         .attr('stroke', (d) => d.o > d.c ? 'red' : 'green')
-        .style('width', 20)
+
+    /** Create Mouse Lines */
+    const mouseLineX = graph.append("line")
+      .attr('x1', graphWidth)
+      .attr('x2', graphWidth)
+      .attr('y1', 0)
+      .attr('y2', graphHeight)
+      .attr('stroke', 'black')
+      // .attr('stroke-dasharray', '5,5')
+      .attr('visibility', 'hidden')
+
+    const mouseLineY = graph.append("line")
+      .attr('x1', 0)
+      .attr('x2', graphWidth)
+      .attr('y1', graphHeight)
+      .attr('y2', graphHeight)
+      .attr('stroke', 'black')
+      // .attr('stroke-dasharray', '5,5')
+      .attr('visibility', 'hidden')
+
+    /** Create bisector to reference on graph lines */
+    const bisect = d3.bisector(d => d?.t).left
+    d3.select('#graph')
+      .on("mousemove", (event) => {
+        const points = d3.pointer(event)
+        const x = points[0]
+        const xValue = xScale.invert(x)
+        const rightIdx = bisect(data?.results, xValue)
+
+        console.log(x, xValue, rightIdx)
+
+        const dataItem = data?.results[rightIdx - 4]
+
+        mouseLineX.attr('visibility', 'visible')
+        mouseLineY.attr('visibility', 'visible')
+
+        mouseLineX.attr('x1', rightIdx * boxWidth - margin.left)
+        mouseLineX.attr('x2', rightIdx * boxWidth - margin.left)
+        if (points[0] < margin.left) {
+          mouseLineX.attr('visibility', 'hidden')
+          mouseLineY.attr('visibility', 'hidden')
+        }
+        if (points[0] > graphWidth + margin.left) {
+          mouseLineX.attr('visibility', 'hidden')
+          mouseLineY.attr('visibility', 'hidden')
+        } 
+
+        mouseLineY.attr('y1', yScale(dataItem?.c))
+        mouseLineY.attr('y2', yScale(dataItem?.c))
+      })
+      .on("mouseover",() => {
+        mouseLineX.attr('visibility', 'visible')
+        mouseLineY.attr('visibility', 'visible')
+      })
+      .on("mouseout",() => {
+        mouseLineX.attr('visibility', 'hidden')
+        mouseLineY.attr('visibility', 'hidden')
+      });
 
     return graph
   },[data, width, height])
