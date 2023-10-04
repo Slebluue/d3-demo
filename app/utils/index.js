@@ -1,5 +1,3 @@
-import moment from 'moment'
-
 const renderXAxisTick = (tick, i, size) => {
   if (size > 10) {
     return tick
@@ -19,6 +17,10 @@ const renderXAxisTick = (tick, i, size) => {
 
   if (size < 2.25) {
     return i !== 0 && i % 24 !== 0 ? '' : tick
+  }
+
+  if (size < 2) {
+    return i !== 0 && i % 5000 !== 0 ? '' : tick
   }
 
 

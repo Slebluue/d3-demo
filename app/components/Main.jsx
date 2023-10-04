@@ -42,6 +42,13 @@ const Main = () => {
    })
 
   const handleFormData = (key, value) => setForm({...form, [key]: value})
+  const handleKeyDown = (e) => {
+    console.log('Key down', e.key)
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      fetchData(form)
+    }
+  }
 
   /**
    * @description
@@ -229,23 +236,48 @@ const Main = () => {
       <Flex>
         <Filter>
           <SmallText>Ticker:</SmallText>
-          <input type='text' value={form?.ticker} onChange={(e) => handleFormData('ticker', e.target.value)} />
+          <input
+            type='text'
+            value={form?.ticker}
+            onChange={(e) => handleFormData('ticker', e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
         </Filter>
         <Filter>
           <SmallText>Multiplier:</SmallText>
-          <input type='text' value={form?.multiplier} onChange={(e) => handleFormData('multiplier', e.target.value)} />
+          <input
+            type='text'
+            value={form?.multiplier}
+            onChange={(e) => handleFormData('multiplier', e.target.value)} 
+            onKeyDown={handleKeyDown}
+          />
         </Filter>
         <Filter>
           <SmallText>Timespan:</SmallText>
-          <input type='text' value={form?.timespan} onChange={(e) => handleFormData('timespan', e.target.value)} />
+          <input
+            type='text'
+            value={form?.timespan}
+            onChange={(e) => handleFormData('timespan', e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
         </Filter>
         <Filter>
           <SmallText>From:</SmallText>
-          <input type='text' value={form?.from} onChange={(e) => handleFormData('from', e.target.value)} />
+          <input
+            type='text'
+            value={form?.from}
+            onChange={(e) => handleFormData('from', e.target.value)} 
+            onKeyDown={handleKeyDown} 
+          />
         </Filter>
         <Filter>
           <SmallText>To:</SmallText>
-          <input type='text' value={form?.to} onChange={(e) => handleFormData('to', e.target.value)} />
+          <input
+            type='text'
+            value={form?.to}
+            onChange={(e) => handleFormData('to', e.target.value)} 
+            onKeyDown={handleKeyDown}
+          />
         </Filter>
         <Button onClick={() => fetchData(form)}>
           {loading
