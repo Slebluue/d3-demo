@@ -1,24 +1,39 @@
 'use client'
-import {useEffect, useState} from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 
 /** Test Data */
 import testData from './aapl.json'
 
-/** D3 */
+/** Hooks / Utils */
+import useRefResize from '../hooks/useRefResize'
+import { renderXAxisTick, formatXAxisTick } from '../utils'
+
+/** Styles */
+import { Container, Card, Flex, Filter, Title, SubTitle, Button } from '../styles'
+
+/** Dependencies */
 import * as d3 from 'd3'
-import moment from 'moment'
+import { Bars } from  'react-loader-spinner'
 
 
-const TEST_MODE = false
+const TEST_MODE = false // Just for development purposes so I do not rate limit myself.
 
+
+/**
+ * @description
+ * Main component. Manages form, data, error, and loading state.
+ */
 const Main = () => {
+  const ref = useRef(null)
+  const { width, height } = useRefResize(ref)
+
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   const [form, setForm] = useState({ 
       ticker: 'AAPL',
-      multiplier: '10',
+      multiplier: '5',
       timespan: 'minute',
       from: '2023-01-09',
       to: '2023-01-09'
@@ -26,6 +41,11 @@ const Main = () => {
 
   const handleFormData = (key, value) => setForm({...form, [key]: value})
 
+  /**
+   * @description
+   * Fetches data from polygon's stock API.
+   * Uses the free tier so we are limited to 5 requests per minute
+   */
   const fetchData = async ({ ticker, multiplier, timespan, from, to }) => {
     if (TEST_MODE) {
       setData(testData)
@@ -33,13 +53,16 @@ const Main = () => {
     }
 
     try {
+      setError(null)
       setLoading(true)
       const res = await fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/range/${multiplier}/${timespan}/${from}/${to}`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_POLYGON_API_KEY}` }
       }).then((res) => res.json())
-  
-      setData(res)
+
+      res?.status !== 'OK'
+        ? setError(res?.error || res?.message)
+        : setData(res)
     } catch (e) {
       setError(e)
     } finally {
@@ -47,27 +70,35 @@ const Main = () => {
     }
   }
 
-  const drawGraph = () => {
-    const margin = {top: 40, right: 40, bottom: 70, left: 40}
-    const height = 500 - (margin.top - margin.bottom)
-    const width = 1300 - (margin.left - margin.right)
+  /**
+   * @description
+   * Function that handles drawing a candle graph in D3.
+   * Is responsive based on width/height of card container.
+   */
+  const drawGraph = useCallback(() => {
+    if (!data || !data?.results) return
+
+    const margin = {top: 20, right: 40, bottom: 70, left: 40}
+    const graphHeight = height - (margin.top - margin.bottom) - 128
+    const graphWidth = width - (margin.left - margin.right) - 64
+    const boxWidth = graphWidth / data?.results?.length
 
     /** Reset Graph onCall */
     d3.select('#graph').selectAll('*').remove();
 
     /** Init Graph Size */
     const graph = d3.select('#graph').append('svg')
-      .attr('width', width + margin.left + margin.right)
-      .attr('height', height + margin.top + margin.bottom)
+      .attr('width', graphWidth + margin.left + margin.right)
+      .attr('height', graphHeight + margin.top + margin.bottom)
       .append('g')
-        .attr('transform', 'translate(40,40)')
+        .attr('transform', `translate(${margin.left},${margin.top})`)
 
     /** Create xAxis */
-    const xScale = d3.scaleBand().range([0,width]).domain(data?.results?.map(d => moment(d.t).format('LT')))
+    const xScale = d3.scaleBand().range([0,graphWidth]).domain(formatXAxisTick(data, form.timespan))
     const xAxis = d3.axisBottom(xScale)
-    xAxis.tickFormat((tick, i) => i % 2 === 0 ? '' : tick)
+    xAxis.tickFormat((tick, i) => renderXAxisTick(tick, i, boxWidth))
     graph.append('g').call(xAxis)
-      .attr('transform', `translate(0, ${height})`)
+      .attr('transform', `translate(0, ${graphHeight})`)
       .selectAll('text')
         .style('text-anchor', 'end')
         .attr('dx', '-.8em')
@@ -77,11 +108,10 @@ const Main = () => {
     /** Create y Axis */
     const max = d3.max(data?.results, (d) => +d.h)
     const min = d3.min(data?.results, (d) => +d.l)
-    const yScale = d3.scaleLinear().range([height,0]).domain([min - 1,max + 1])
+    const yScale = d3.scaleLinear().range([graphHeight,0]).domain([min - 1,max + 1])
     graph.append('g').call(d3.axisLeft(yScale))
 
     /** Create Boxes */
-    const boxWidth = width / data?.results.length
     const candles = graph.selectAll('candles').data(data?.results).enter()
     candles.append('rect')
       .attr('x', (_,i) => boxWidth * i)
@@ -102,43 +132,65 @@ const Main = () => {
         .style('width', 20)
 
     return graph
-  }
+  },[data, width, height])
 
+  /**
+   * @description
+   * Fetch data on mount
+   */
   useEffect(() => {
     fetchData(form)
   }, [])
 
+  /**
+   * @description
+   * Graph redraws when data, width, or height changes for the component.
+   */
   useEffect(() => {
-    data && drawGraph()
-  }, [data])
+    drawGraph()
+  }, [drawGraph])
 
   return (
-    <div>
-      <form>
-        <lable>
-          Ticker:
+    <Container>
+      <Title>D3 Demo - Candle Graph</Title>
+      <SubTitle>Render aggregate bars for a stock given a date range and custom time window sizes.</SubTitle>
+      <SubTitle>For example, if timespan = ‘minute’ and multiplier = ‘5’ then 5-minute bars will be returned.</SubTitle>
+      <SubTitle>Please note that the (free) API is rate limited to 5 request per minute. You may see an error if you submit the filters within that time frame.</SubTitle>
+      <Flex>
+        <Filter>
+          <span>Ticker:</span>
           <input type='text' value={form?.ticker} onChange={(e) => handleFormData('ticker', e.target.value)} />
-        </lable>
-        <lable>
-          Multiplier:
+        </Filter>
+        <Filter>
+          <span>Multiplier:</span>
           <input type='text' value={form?.multiplier} onChange={(e) => handleFormData('multiplier', e.target.value)} />
-        </lable>
-        <lable>
-          Timespan:
+        </Filter>
+        <Filter>
+          <span>Timespan:</span>
           <input type='text' value={form?.timespan} onChange={(e) => handleFormData('timespan', e.target.value)} />
-        </lable>
-        <lable>
-          From:
+        </Filter>
+        <Filter>
+          <span>From:</span>
           <input type='text' value={form?.from} onChange={(e) => handleFormData('from', e.target.value)} />
-        </lable>
-        <lable>
-          To:
+        </Filter>
+        <Filter>
+          <span>To:</span>
           <input type='text' value={form?.to} onChange={(e) => handleFormData('to', e.target.value)} />
-        </lable>
-      </form>
-      <button onClick={() => fetchData(form)}>Submit</button>
-      <div id='graph' style={{ width: '100%', height: '800px' }} />
-    </div>
+        </Filter>
+        <Button onClick={() => fetchData(form)}>
+          {loading
+            ? <Bars visible={true} color='white' width='60' height='14' />
+            : 'Submit'}
+        </Button>
+      </Flex>
+      {error && <SubTitle style={{ color: 'red' }}>{error}</SubTitle>}
+      <Card
+        id='graph'
+        ref={ref}
+        width='100%'
+        height='500px'
+      />
+    </Container>
   )
 }
 
