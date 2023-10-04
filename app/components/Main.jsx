@@ -160,19 +160,19 @@ const Main = () => {
     d3.select('#graph')
       .on("mousemove", (event) => {
         const points = d3.pointer(event)
-        const x = points[0]
+        const x = points[0] - margin.left
         const xValue = xScale.invert(x)
         const rightIdx = bisect(data?.results, xValue)
 
         console.log(x, xValue, rightIdx)
 
-        const dataItem = data?.results[rightIdx - 4]
+        const dataItem = data?.results[rightIdx]
 
         mouseLineX.attr('visibility', 'visible')
         mouseLineY.attr('visibility', 'visible')
 
-        mouseLineX.attr('x1', rightIdx * boxWidth - margin.left)
-        mouseLineX.attr('x2', rightIdx * boxWidth - margin.left)
+        mouseLineX.attr('x1', rightIdx * boxWidth)
+        mouseLineX.attr('x2', rightIdx * boxWidth)
         if (points[0] < margin.left) {
           mouseLineX.attr('visibility', 'hidden')
           mouseLineY.attr('visibility', 'hidden')
