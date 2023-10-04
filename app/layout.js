@@ -12,7 +12,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className} style={{ margin: 0 }}>
+      <body className={inter.className} style={{ margin: 0, height: '100vh', background: '#f6f8fa' }}>
         <StyledComponentsRegistry>{children}</StyledComponentsRegistry>
         <Analytics />
       </body>
