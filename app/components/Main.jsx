@@ -43,7 +43,6 @@ const Main = () => {
 
   const handleFormData = (key, value) => setForm({...form, [key]: value})
   const handleKeyDown = (e) => {
-    console.log('Key down', e.key)
     if (e.key === 'Enter') {
       e.preventDefault()
       fetchData(form)
